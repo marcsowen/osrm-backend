@@ -5,82 +5,90 @@
 
 #include <boost/foreach.hpp>
 
-template<class DataFacadeT> class GenRobDescriptor : public BaseDescriptor<DataFacadeT> {
+template<class DataFacadeT> class WayIdDescriptor : public BaseDescriptor<DataFacadeT> {
 private:
     DescriptorConfig config;
     FixedPointCoordinate current;
+    DataFacadeT * facade;
 
-    std::string tmp;
 public:
+    WayIdDescriptor(DataFacadeT *facade) : facade(facade) {}
+
     void SetConfig(const DescriptorConfig & c) { config = c; }
 
-    //TODO: reorder parameters
-    void Run(
-        http::Reply & reply,
-        const RawRouteData &rawRoute,
-        PhantomNodes &phantomNodes,
-        const DataFacadeT * facade
-    ) {
-        reply.content.push_back("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-        reply.content.push_back("<genrob>\n");
+    void AddRoutePoint(const FixedPointCoordinate & coordinate, std::vector<char> & output)
+    {
+        const std::string route_point_head   = "  <waypoint><lon>";
+        const std::string route_point_middle = "</lon><lat>";
+        const std::string route_point_tail   = "</lat></waypoint>\n";
 
-        bool found_route =  (rawRoute.lengthOfShortestPath != INT_MAX) &&
-                            (rawRoute.computedShortestPath.size()         );
+        std::string tmp;
+
+        FixedPointCoordinate::convertInternalLatLonToString(coordinate.lat, tmp);
+        output.insert(output.end(), route_point_head.begin(), route_point_head.end());
+        output.insert(output.end(), tmp.begin(), tmp.end());
+
+        FixedPointCoordinate::convertInternalLatLonToString(coordinate.lon, tmp);
+        output.insert(output.end(), route_point_middle.begin(), route_point_middle.end());
+        output.insert(output.end(), tmp.begin(), tmp.end());
+        output.insert(output.end(), route_point_tail.begin(), route_point_tail.end());
+    }
+
+    void Run(const RawRouteData &raw_route, http::Reply &reply)
+    {
+        std::string tmp;
+
+        std::string header = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<result>\n";
+
+        reply.content.insert(reply.content.end(), header.begin(), header.end());
+
+        const bool found_route = (raw_route.shortest_path_length != INVALID_EDGE_WEIGHT) &&
+                                 (!raw_route.unpacked_path_segments.front().empty());
+
         if( found_route ) {
+            tmp = "<route>\n";
 
-            reply.content.push_back("<route>\n");
+            reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
 
-            std::string startNodeLon, startNodeLat;
-            std::string targetNodeLon, targetNodeLat;
+            AddRoutePoint(raw_route.segment_end_coordinates.front().source_phantom.location, reply.content);
 
-            convertInternalLatLonToString(phantomNodes.startPhantom.location.lon, startNodeLon);
-            convertInternalLatLonToString(phantomNodes.startPhantom.location.lat, startNodeLat);
-            convertInternalLatLonToString(phantomNodes.targetPhantom.location.lon, targetNodeLon);
-            convertInternalLatLonToString(phantomNodes.targetPhantom.location.lat, targetNodeLat);
-
-            std::stringstream sstr_start;
-            sstr_start << "\t<waypoint><lon>" << startNodeLon << "</lon><lat>" << startNodeLat << "</lat></waypoint>\n";
-            reply.content.push_back(sstr_start.str());
-
-            BOOST_FOREACH(
-                const _PathData & pathData,
-                rawRoute.computedShortestPath
-            ) {
-                std::string lonString, latString;
-
-                FixedPointCoordinate current = facade->GetCoordinateOfNode(pathData.node);
-                convertInternalLatLonToString(current.lon, lonString);
-                convertInternalLatLonToString(current.lat, latString);
-
-                std::stringstream sstr;
-                sstr << "\t<waypoint><lon>" << lonString << "</lon><lat>" << latString << "</lat></waypoint>\n";
-                reply.content.push_back(sstr.str());
+            for (const std::vector<PathData> &path_data_vector : raw_route.unpacked_path_segments)
+            {
+                for (const PathData &path_data : path_data_vector)
+                {
+                    const FixedPointCoordinate current_coordinate =
+                        facade->GetCoordinateOfNode(path_data.node);
+                    AddRoutePoint(current_coordinate, reply.content);
+                }
             }
 
-            std::stringstream sstr_target;
-            sstr_target << "\t<waypoint><lon>" << targetNodeLon << "</lon><lat>" << targetNodeLat << "</lat></waypoint>\n";
-            reply.content.push_back(sstr_target.str());
+            AddRoutePoint(raw_route.segment_end_coordinates.back().target_phantom.location, reply.content);
 
-            reply.content.push_back("</route>\n");
-            reply.content.push_back("<wayids>\n");
-            long lastID = 0;
-            BOOST_FOREACH(
-                const _PathData & pathData,
-                rawRoute.computedShortestPath
-            ) {
-				if (pathData.nameID != lastID) {
-					std::stringstream sstr;
-                    sstr << "\t<id>" << pathData.nameID << "</id>\n";
-					reply.content.push_back(sstr.str());
-					lastID = pathData.nameID;
-				}
-				lastID = pathData.nameID;
+            tmp = "</route>\n<wayids>\n";
+            reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
+
+            long last_id = 0;
+
+            for (const std::vector<PathData> &path_data_vector : raw_route.unpacked_path_segments)
+            {
+                for (const PathData &path_data : path_data_vector)
+                {
+                    if (path_data.name_id != last_id) {
+                        std::stringstream sstr;
+                         sstr << "  <id>" << path_data.name_id << "</id>\n";
+                        std::string id = sstr.str();
+                        reply.content.insert(reply.content.end(), id.begin(), id.end());
+                        last_id = path_data.name_id;
+                    }
+                }
             }
 
-            reply.content.push_back("</wayids>\n");
+            tmp = "</wayids>\n";
+            reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
         }
 
-        reply.content.push_back("</genrob>");
+        tmp = "</result>\n";
+        reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
     }
 };
-#endif // GENROB_DESCRIPTOR_H_
+#endif // WAYID_DESCRIPTOR_H_

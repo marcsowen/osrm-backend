@@ -114,9 +114,10 @@ template <class EdgeDataT> class BaseDataFacade
 
     std::string GetEscapedNameForNameID(const unsigned name_id) const
     {
-        std::string temporary_string;
-        GetName(name_id, temporary_string);
-        return EscapeJSONString(temporary_string);
+        //std::string temporary_string;
+        //GetName(name_id, temporary_string);
+        //return EscapeJSONString(temporary_string);
+        return "Unknown (no nameId data)";
     }
 
     virtual std::string GetTimestamp() const = 0;

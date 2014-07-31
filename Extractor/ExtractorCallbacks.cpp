@@ -93,18 +93,7 @@ void ExtractorCallbacks::ProcessWay(ExtractionWay &parsed_way)
         return;
     }
 
-    // Get the unique identifier for the street name
-    const auto &string_map_iterator = string_map.find(parsed_way.name);
-    if (string_map.end() == string_map_iterator)
-    {
-        parsed_way.nameID = external_memory.name_list.size();
-        external_memory.name_list.push_back(parsed_way.name);
-        string_map.insert(std::make_pair(parsed_way.name, parsed_way.nameID));
-    }
-    else
-    {
-        parsed_way.nameID = string_map_iterator->second;
-    }
+    parsed_way.nameID = parsed_way.id;
 
     if (ExtractionWay::opposite == parsed_way.direction)
     {
