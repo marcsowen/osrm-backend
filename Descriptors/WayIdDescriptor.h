@@ -46,6 +46,12 @@ public:
                                  (!raw_route.unpacked_path_segments.front().empty());
 
         if( found_route ) {
+
+            std::stringstream sstr;
+            sstr << "<length>" << std::round(raw_route.shortest_path_length/1000.) << "</length>\n";
+            tmp = sstr.str();
+            reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
+
             tmp = "<route>\n";
 
             reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
