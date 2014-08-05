@@ -18,9 +18,9 @@ public:
 
     void AddRoutePoint(const FixedPointCoordinate & coordinate, std::vector<char> & output)
     {
-        const std::string route_point_head   = "  <waypoint><lon>";
-        const std::string route_point_middle = "</lon><lat>";
-        const std::string route_point_tail   = "</lat></waypoint>\n";
+        const std::string route_point_head   = "  <waypoint><lat>";
+        const std::string route_point_middle = "</lat><lon>";
+        const std::string route_point_tail   = "</lon></waypoint>\n";
 
         std::string tmp;
 
