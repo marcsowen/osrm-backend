@@ -38,6 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../Descriptors/GPXDescriptor.h"
 #include "../Descriptors/JSONDescriptor.h"
 #include "../Descriptors/WayIdDescriptor.h"
+#include "../Descriptors/LengthDescriptor.h"
 #include "../Util/SimpleLogger.h"
 #include "../Util/StringUtil.h"
 #include "../Util/TimingUtil.h"
@@ -64,6 +65,7 @@ template <class DataFacadeT> class ViaRoutePlugin : public BasePlugin
         descriptor_table.emplace("json", 0);
         descriptor_table.emplace("gpx", 1);
         descriptor_table.emplace("wayid", 2);
+        descriptor_table.emplace("length", 3);
         // descriptor_table.emplace("geojson", 2);
     }
 
@@ -141,8 +143,6 @@ template <class DataFacadeT> class ViaRoutePlugin : public BasePlugin
         auto iter = descriptor_table.find(route_parameters.output_format);
         unsigned descriptor_type = (iter != descriptor_table.end() ? iter->second : 0);
 
-        SimpleLogger().Write(logDEBUG) << "Descriptor name: " << route_parameters.output_format << ", id: " << descriptor_type;
-
         descriptor_config.zoom_level = route_parameters.zoom_level;
         descriptor_config.instructions = route_parameters.print_instructions;
         descriptor_config.geometry = route_parameters.geometry;
@@ -159,7 +159,9 @@ template <class DataFacadeT> class ViaRoutePlugin : public BasePlugin
             break;
         case 2:
             descriptor = std::make_shared<WayIdDescriptor<DataFacadeT>>(facade);
-            SimpleLogger().Write(logDEBUG) << "Choosing WayIdDescriptor.";
+            break;
+        case 3:
+            descriptor = std::make_shared<LengthDescriptor<DataFacadeT>>(facade);
             break;
         default:
             descriptor = std::make_shared<JSONDescriptor<DataFacadeT>>(facade);
