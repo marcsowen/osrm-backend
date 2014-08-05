@@ -119,8 +119,7 @@ void RequestHandler::handle_request(const http::Request &req, http::Reply &reply
             reply.headers.emplace_back("Content-Type", "application/gpx+xml; charset=UTF-8");
             reply.headers.emplace_back("Content-Disposition", "attachment; filename=\"route.gpx\"");
         }
-        else if (   "wayid" == route_parameters.output_format
-                 || "length" == route_parameters.output_format)
+        else if ("wayid" == route_parameters.output_format)
         {
             reply.headers.emplace_back("Content-Type", "application/xml; charset=UTF-8");
             reply.headers.emplace_back("Content-Disposition", "inline; filename=\"output.xml\""); 

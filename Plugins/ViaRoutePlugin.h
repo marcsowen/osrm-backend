@@ -38,7 +38,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "../Descriptors/GPXDescriptor.h"
 #include "../Descriptors/JSONDescriptor.h"
 #include "../Descriptors/WayIdDescriptor.h"
-#include "../Descriptors/LengthDescriptor.h"
 #include "../Util/SimpleLogger.h"
 #include "../Util/StringUtil.h"
 #include "../Util/TimingUtil.h"
@@ -65,7 +64,6 @@ template <class DataFacadeT> class ViaRoutePlugin : public BasePlugin
         descriptor_table.emplace("json", 0);
         descriptor_table.emplace("gpx", 1);
         descriptor_table.emplace("wayid", 2);
-        descriptor_table.emplace("length", 3);
         // descriptor_table.emplace("geojson", 2);
     }
 
@@ -159,9 +157,6 @@ template <class DataFacadeT> class ViaRoutePlugin : public BasePlugin
             break;
         case 2:
             descriptor = std::make_shared<WayIdDescriptor<DataFacadeT>>(facade);
-            break;
-        case 3:
-            descriptor = std::make_shared<LengthDescriptor<DataFacadeT>>(facade);
             break;
         default:
             descriptor = std::make_shared<JSONDescriptor<DataFacadeT>>(facade);
