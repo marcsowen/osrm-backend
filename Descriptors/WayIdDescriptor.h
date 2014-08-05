@@ -48,7 +48,7 @@ public:
         if( found_route ) {
 
             std::stringstream sstr;
-            sstr << "<length>" << std::round(raw_route.shortest_path_length/1000.) << "</length>\n";
+            sstr << "<length>" << raw_route.shortest_path_length/1000. << "</length>\n";
             tmp = sstr.str();
             reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
 
