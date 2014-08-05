@@ -10,9 +10,11 @@ private:
     DescriptorConfig config;
     FixedPointCoordinate current;
     DataFacadeT * facade;
+    double total_length;
+    FixedPointCoordinate prev_coordinate;
 
 public:
-    WayIdDescriptor(DataFacadeT *facade) : facade(facade) {}
+    WayIdDescriptor(DataFacadeT *facade) : facade(facade), total_length(0) {}
 
     void SetConfig(const DescriptorConfig & c) { config = c; }
 
@@ -32,6 +34,9 @@ public:
         output.insert(output.end(), route_point_middle.begin(), route_point_middle.end());
         output.insert(output.end(), tmp.begin(), tmp.end());
         output.insert(output.end(), route_point_tail.begin(), route_point_tail.end());
+
+        total_length += FixedPointCoordinate::ApproximateEuclideanDistance(prev_coordinate, coordinate);
+        prev_coordinate = coordinate;
     }
 
     void Run(const RawRouteData &raw_route, http::Reply &reply)
@@ -47,15 +52,11 @@ public:
 
         if( found_route ) {
 
-            std::stringstream sstr;
-            sstr << "<length>" << raw_route.shortest_path_length/1000. << "</length>\n";
-            tmp = sstr.str();
-            reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
-
             tmp = "<route>\n";
-
             reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
 
+            prev_coordinate = raw_route.segment_end_coordinates.front().source_phantom.location;
+            total_length = 0;
             AddRoutePoint(raw_route.segment_end_coordinates.front().source_phantom.location, reply.content);
 
             for (const std::vector<PathData> &path_data_vector : raw_route.unpacked_path_segments)
@@ -92,6 +93,11 @@ public:
             tmp = "</wayids>\n";
             reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
         }
+
+        std::stringstream sstr;
+        sstr << "<length>" << total_length/1000. << "</length>\n";
+        tmp = sstr.str();
+        reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
 
         tmp = "</result>\n";
         reply.content.insert(reply.content.end(), tmp.begin(), tmp.end());
